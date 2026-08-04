@@ -202,5 +202,17 @@ SUPABASE_STORAGE_ENABLED = bool(SUPABASE_SERVICE_ROLE_KEY) and (
     SUPABASE_SERVICE_ROLE_KEY != "service-role-placeholder"
 )
 
+if RENDER_EXTERNAL_HOSTNAME and not SUPABASE_STORAGE_ENABLED:
+    # Render disks are ephemeral — resumes written to MEDIA_ROOT would be
+    # silently lost on every redeploy. Fail loudly on Render so the missing/
+    # misconfigured service-role key is fixed instead of data being lost.
+    # (Local dev with the placeholder key is unaffected.)
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured(
+        "SUPABASE_SERVICE_ROLE_KEY must be a real Supabase service-role key in "
+        "production (storage is disabled with the placeholder value)."
+    )
+
 # Maximum resume file size in MB
 MAX_RESUME_SIZE_MB = 1
