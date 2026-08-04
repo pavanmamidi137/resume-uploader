@@ -14,6 +14,9 @@ services:
     name: resume-portal
     runtime: python
     plan: free
+    # Pin a Python version with prebuilt wheels for psycopg2-binary.
+    # (Python 3.14 has no reliable psycopg2 wheels yet; 3.12 is safest.)
+    pythonVersion: "3.12.4"
     # Deploys are triggered by the GitHub Actions workflow (.github/workflows/
     # deploy.yml). autoDeploy is disabled here so Render's native git watching
     # doesn't deploy in parallel with the workflow's Django system check.
