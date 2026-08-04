@@ -36,14 +36,6 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000
 
-## Demo logins (after seed_demo)
-
-| Role | Username | Password |
-|------|----------|----------|
-| Super Admin | `admin` | `admin123` |
-| Sub Admin (CR) | `CR01` | `CR01` |
-| Student | `21CS1001` | `21CS1001` |
-| Student | `21CS1002` | `21CS1002` |
 
 Students and CRs sign in with their roll number (roll number = username = initial password). Changing the password after login is optional.
 
