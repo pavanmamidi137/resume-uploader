@@ -27,6 +27,26 @@ ALLOWED_HOSTS = [
     if h.strip()
 ]
 
+# Render injects the public hostname (e.g. resume-portal.onrender.com) via this
+# env var. Add it automatically so the site never 400s on its own domain.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Origins allowed to send POST requests over HTTPS (needed for the login/upload
+# forms once served over https). Comma-separated, e.g.
+# CSRF_TRUSTED_ORIGINS=https://resume-portal.onrender.com
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys(
+        [
+            o.strip()
+            for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+            if o.strip()
+        ]
+        + ([f"https://{RENDER_EXTERNAL_HOSTNAME}"] if RENDER_EXTERNAL_HOSTNAME else [])
+    )
+)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -73,10 +93,33 @@ WSGI_APPLICATION = "resume_portal.wsgi.application"
 # Database (Supabase Postgres). Falls back to SQLite if DATABASE_URL missing.
 # ---------------------------------------------------------------------------
 _db_url = os.environ.get("DATABASE_URL") or "sqlite:///db.sqlite3"
-DB_CONFIG = dj_database_url.parse(_db_url, conn_max_age=600)
+if _db_url.startswith("sqlite") and not DEBUG:
+    # Never silently run production on a throwaway SQLite file (Render disks are
+    # ephemeral). Fail loudly instead of losing data.
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured("DATABASE_URL must be set to a Postgres URL in production.")
+
+# Supabase's transaction-mode pooler (?pgbouncer=true) does not support
+# persistent connections well with Django; use conn_max_age=0 in that case.
+_is_pooler = "pooler.supabase.com" in _db_url or "pgbouncer" in _db_url
+DB_CONFIG = dj_database_url.parse(_db_url, conn_max_age=0 if _is_pooler else 600)
 if DB_CONFIG["ENGINE"] != "django.db.backends.sqlite3":
-    # Supabase requires SSL
-    DB_CONFIG["OPTIONS"] = {"sslmode": "require"}
+    # Supabase requires SSL. Keep only connection options psycopg2 understands;
+    # strip pooler-specific query params (e.g. ?pgbouncer=true) that would crash
+    # psycopg2.connect() with unexpected-keyword errors.
+    _PQ_OPTIONS = {
+        "sslmode",
+        "sslrootcert",
+        "sslcert",
+        "sslkey",
+        "connect_timeout",
+        "application_name",
+    }
+    DB_CONFIG["OPTIONS"] = {
+        k: v for k, v in DB_CONFIG.get("OPTIONS", {}).items() if k in _PQ_OPTIONS
+    }
+    DB_CONFIG["OPTIONS"].setdefault("sslmode", "require")
 DATABASES = {"default": DB_CONFIG}
 
 # ---------------------------------------------------------------------------
@@ -107,11 +150,11 @@ USE_TZ = True
 # ---------------------------------------------------------------------------
 # Static & media
 # ---------------------------------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 STORAGES = {
@@ -120,6 +163,31 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ---------------------------------------------------------------------------
+# Production security (active only when DEBUG is off, e.g. on Render)
+# ---------------------------------------------------------------------------
+if not DEBUG:
+    # HTTPS-only hardening applies when served behind a TLS-terminating proxy
+    # (Render sets RENDER_EXTERNAL_HOSTNAME) or when explicitly enabled. Local
+    # dev with DEBUG=0 over plain HTTP stays functional.
+    _behind_proxy = bool(RENDER_EXTERNAL_HOSTNAME)
+    _force_https = os.environ.get("SECURE_SSL_REDIRECT", "1" if _behind_proxy else "0") == "1"
+    if _behind_proxy:
+        # Render terminates TLS at its proxy; tell Django the request is HTTPS.
+        SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    if _force_https:
+        SECURE_SSL_REDIRECT = True
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    # HTTP Strict Transport Security (enable once HTTPS works end-to-end).
+    # HSTS Preload is only valid at >= 1 year and is an irreversible commitment.
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0"))
+    if SECURE_HSTS_SECONDS and _behind_proxy:
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        if SECURE_HSTS_SECONDS >= 31536000:
+            SECURE_HSTS_PRELOAD = True
 
 # ---------------------------------------------------------------------------
 # Supabase (storage)

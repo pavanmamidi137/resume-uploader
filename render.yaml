@@ -1,0 +1,42 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# The Start Command is the critical fix: the Django project package is
+# `resume_portal` (underscore), NOT the repo name `resume-uploader` (hyphen).
+# Gunicorn imports modules by Python name, so hyphens are invalid there.
+#
+# Usage:
+#   Option A (dashboard):  create a "Web Service" from the repo, paste the
+#                          buildCommand / startCommand below verbatim, then add
+#                          the envVars as secrets.
+#   Option B (blueprint):  `render blueprint launch` in the repo root, then
+#                          fill in the sync:false values in the dashboard.
+services:
+  - type: web
+    name: resume-portal
+    runtime: python
+    plan: free
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate --noinput
+    startCommand: >-
+      gunicorn resume_portal.wsgi:application
+      --bind 0.0.0.0:$PORT
+      --workers 2
+      --timeout 120
+    envVars:
+      - key: SECRET_KEY
+        sync: false # generate a long random string in the dashboard
+      - key: DEBUG
+        value: "0"
+      - key: ALLOWED_HOSTS
+        value: "localhost,127.0.0.1"
+      # RENDER_EXTERNAL_HOSTNAME is auto-provided by Render; settings.py appends
+      # it to ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS automatically.
+      - key: DATABASE_URL
+        sync: false # your Supabase connection string, e.g. postgresql://postgres:...@db.xxx.supabase.co:5432/postgres
+      - key: SUPABASE_URL
+        sync: false # https://<project-ref>.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # the real service-role key (NOT the placeholder)
+      - key: SUPABASE_STORAGE_BUCKET
+        value: "resumes"

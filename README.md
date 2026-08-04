@@ -56,3 +56,50 @@ roll_number,name
 ```
 
 Roll numbers that already exist (students, CRs or admins) are automatically skipped — no duplicates.
+
+## Deploy on Render
+
+> ⚠️ **The most common failure**: the Start Command must reference the Django
+> project package **`resume_portal`** (underscore) — NOT the repo name
+> `resume-uploader` (hyphen). Gunicorn imports modules by Python name, and
+> hyphens are invalid in module names:
+>
+> ```
+> ModuleNotFoundError: No module named 'resume-uploader'
+> ```
+
+### Option A — Render Dashboard (recommended)
+
+1. New → **Web Service** → connect the `resume-uploader` repo.
+2. Set the **Build Command**:
+   ```bash
+   pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput
+   ```
+3. Set the **Start Command**:
+   ```bash
+   gunicorn resume_portal.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+   ```
+4. Add the environment variables below.
+
+### Option B — Blueprint (`render.yaml`)
+
+A `render.yaml` Blueprint with these commands is included in the repo.
+
+### Environment variables (set on Render)
+
+| Variable | Value |
+|----------|-------|
+| `SECRET_KEY` | long random string (generate one, don't reuse the local one) |
+| `DEBUG` | `0` |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1` (the `.onrender.com` hostname is added automatically) |
+| `DATABASE_URL` | your Supabase Postgres connection string |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | the **real** service-role key from Supabase → Project Settings → API |
+| `SUPABASE_STORAGE_BUCKET` | `resumes` |
+
+### Production notes
+
+- **Static files** are served by WhiteNoise (no CDN needed) — `collectstatic` runs in the build step.
+- **Migrations** run automatically in the build step (or run them manually from the Render Shell).
+- **Supabase Storage** is used only when `SUPABASE_SERVICE_ROLE_KEY` is a real key — with the placeholder it falls back to local disk (not persistent on Render). Create the `resumes` bucket in Supabase Storage if you haven't.
+- HTTPS is enforced automatically when `DEBUG=0`; `CSRF_TRUSTED_ORIGINS` is populated from `RENDER_EXTERNAL_HOSTNAME`.
