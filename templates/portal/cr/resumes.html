@@ -20,7 +20,17 @@
 
 <div class="card">
   <div class="card-body p-4">
-    <h6 class="card-title mb-3">Student resumes</h6>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h6 class="card-title mb-0">Student resumes</h6>
+    </div>
+    <form method="get" class="mb-3">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Search by roll no. or name…" value="{{ search }}">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Search</button>
+        {% if search %}<a class="btn btn-soft" href="{% url 'portal:cr_resumes' %}">Clear</a>{% endif %}
+      </div>
+    </form>
     <div class="table-responsive">
       <table class="table table-hover align-middle">
         <thead>

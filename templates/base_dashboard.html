@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,7 @@
 <div class="app-shell">
 
   <aside class="sidebar">
+    <button class="sidebar-close d-lg-none" type="button" aria-label="Close menu"><i class="bi bi-x-lg"></i></button>
     <div class="sidebar-brand">
       <span class="brand-icon-sm"><i class="bi bi-file-earmark-person-fill"></i></span>
       <span>Resume Portal</span>
@@ -62,7 +63,7 @@
 
   <main class="main">
     <header class="topbar">
-      <button class="btn btn-soft sidebar-toggle d-lg-none" type="button" aria-label="Toggle menu">
+      <button class="btn sidebar-toggle d-lg-none" type="button" aria-label="Toggle menu">
         <i class="bi bi-list"></i>
       </button>
       <div class="topbar-title">

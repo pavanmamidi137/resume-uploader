@@ -7,16 +7,21 @@ document.addEventListener("DOMContentLoaded", function () {
     backdrop.className = "sidebar-backdrop";
     document.body.appendChild(backdrop);
   }
+  function isMobile() { return window.innerWidth < 992; }
   function setSidebar(open) {
     if (!sidebar) return;
     sidebar.classList.toggle("open", open);
     if (backdrop) backdrop.classList.toggle("show", open);
     document.body.style.overflow = open ? "hidden" : "";
   }
+  function toggleSidebar() {
+    setSidebar(!sidebar.classList.contains("open"));
+  }
   document.querySelectorAll(".sidebar-toggle").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      setSidebar(!sidebar.classList.contains("open"));
-    });
+    btn.addEventListener("click", toggleSidebar);
+  });
+  document.querySelectorAll(".sidebar-close").forEach(function (btn) {
+    btn.addEventListener("click", function () { setSidebar(false); });
   });
   if (backdrop) {
     backdrop.addEventListener("click", function () { setSidebar(false); });
@@ -27,6 +32,29 @@ document.addEventListener("DOMContentLoaded", function () {
   window.addEventListener("resize", function () {
     if (window.innerWidth >= 992) setSidebar(false);
   });
+
+  // Swipe gestures: swipe left-to-right to open the drawer,
+  // swipe right-to-left to close it. Only on mobile screens.
+  var touchStartX = null;
+  var touchStartY = null;
+  var SWIPE_THRESHOLD = 60;
+  document.addEventListener("touchstart", function (e) {
+    if (!isMobile()) return;
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+  }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (!isMobile() || touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    touchStartX = null;
+    touchStartY = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+    if (Math.abs(dx) <= Math.abs(dy)) return; // ignore vertical scrolls
+    var drawerOpen = sidebar.classList.contains("open");
+    if (dx > 0 && !drawerOpen) setSidebar(true);      // left -> right: open
+    else if (dx < 0 && drawerOpen) setSidebar(false);  // right -> left: close
+  }, { passive: true });
 
   // Auto-dismiss flash messages after a few seconds
   document.querySelectorAll(".alert-dismissible").forEach(function (alert) {

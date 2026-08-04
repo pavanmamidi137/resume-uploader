@@ -3,7 +3,7 @@ import re
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -72,15 +72,26 @@ def cr_students(request):
     else:
         form = StudentCreateForm()
 
+    search = request.GET.get("q", "").strip()
     students = (
         _cr_students(user)
         .annotate(has_resume=Count("resume"))
         .order_by("username")
     )
+    if search:
+        students = students.filter(
+            Q(username__icontains=search) | Q(first_name__icontains=search)
+        )
     return render(
         request,
         "portal/cr/students.html",
-        {"form": form, "csv_form": CsvUploadForm(), "students": students, "section": section},
+        {
+            "form": form,
+            "csv_form": CsvUploadForm(),
+            "students": students,
+            "section": section,
+            "search": search,
+        },
     )
 
 
@@ -148,16 +159,21 @@ def csv_template(request):
 @role_required("SUB_ADMIN")
 def cr_resumes(request):
     user = request.user
+    search = request.GET.get("q", "").strip()
     students = (
         _cr_students(user)
         .select_related("section__branch")
         .annotate(has_resume=Count("resume"))
         .order_by("username")
     )
+    if search:
+        students = students.filter(
+            Q(username__icontains=search) | Q(first_name__icontains=search)
+        )
     return render(
         request,
         "portal/cr/resumes.html",
-        {"students": students, "section": user.section},
+        {"students": students, "section": user.section, "search": search},
     )
 
 

@@ -5,7 +5,7 @@
 <div class="card mb-4">
   <div class="card-body p-4">
     <form method="get" class="row g-3 align-items-end">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label fw-semibold" for="id-branch">Branch</label>
         <select name="branch" id="id-branch" class="form-select">
           <option value="">All branches</option>
@@ -14,7 +14,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <label class="form-label fw-semibold" for="id-section">Section</label>
         <select name="section" id="id-section" class="form-select">
           <option value="">All sections</option>
@@ -24,16 +24,30 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4 d-flex gap-2">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold" for="id-search">Search student</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" id="id-search" class="form-control"
+                 placeholder="Roll no. or name…" value="{{ search }}">
+        </div>
+      </div>
+      <div class="col-md-3 d-flex gap-2 flex-wrap">
         <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Filter</button>
         <a class="btn btn-soft" href="{% url 'portal:super_admin_resumes' %}">Clear</a>
-        {% if selected_section %}
-          <a class="btn btn-success" href="{% url 'portal:section_resumes_zip' selected_section.pk %}">
-            <i class="bi bi-file-earmark-zip me-1"></i>Download ZIP
-          </a>
-        {% endif %}
       </div>
     </form>
+    <hr class="my-3">
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-success" href="{% url 'portal:super_admin_all_resumes_zip' %}">
+        <i class="bi bi-file-earmark-zip me-1"></i>Download all resumes (ZIP)
+      </a>
+      {% if selected_section %}
+        <a class="btn btn-outline-success" href="{% url 'portal:section_resumes_zip' selected_section.pk %}">
+          <i class="bi bi-file-earmark-zip me-1"></i>ZIP — {{ selected_section }}
+        </a>
+      {% endif %}
+    </div>
   </div>
 </div>
 

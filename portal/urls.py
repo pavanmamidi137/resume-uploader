@@ -27,6 +27,7 @@ urlpatterns = [
     path("superadmin/students/csv/", views.super_admin_students_csv, name="super_admin_students_csv"),
     path("superadmin/students/<int:user_id>/make-cr/", views.make_sub_admin, name="super_admin_make_cr"),
     path("superadmin/resumes/", views.super_admin_resumes, name="super_admin_resumes"),
+    path("superadmin/resumes/all-zip/", views.all_resumes_zip, name="super_admin_all_resumes_zip"),
     # ------------------------------------------------------------------
     # CR (sub admin)
     # ------------------------------------------------------------------

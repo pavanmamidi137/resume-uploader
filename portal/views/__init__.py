@@ -16,6 +16,7 @@ from .shared import (  # noqa: F401
 )
 from .student import student_dashboard  # noqa: F401
 from .super_admin import (  # noqa: F401
+    all_resumes_zip,
     delete_user,
     make_sub_admin,
     reset_password,

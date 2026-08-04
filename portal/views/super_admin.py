@@ -1,8 +1,11 @@
+import io
 import re
+import zipfile
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import User
@@ -18,7 +21,7 @@ from ..forms import (
     SuperAdminStudentCreateForm,
 )
 from ..models import Branch, Resume, Section
-from .shared import _back
+from .shared import _back, safe_filename
 
 
 def _student_queryset():
@@ -200,6 +203,7 @@ def _create_student(roll, name, section):
 def super_admin_students(request):
     branch_id = request.GET.get("branch") or ""
     section_id = request.GET.get("section") or ""
+    search = request.GET.get("q", "").strip()
     students = _student_queryset().annotate(has_resume=Count("resume")).order_by(
         "section__branch__name", "username"
     )
@@ -207,6 +211,15 @@ def super_admin_students(request):
         students = students.filter(section_id=section_id)
     elif branch_id:
         students = students.filter(section__branch_id=branch_id)
+    if search:
+        students = students.filter(
+            Q(username__icontains=search) | Q(first_name__icontains=search)
+        )
+    selected_section = (
+        Section.objects.filter(pk=section_id).select_related("branch").first()
+        if section_id
+        else None
+    )
     return render(
         request,
         "portal/superadmin/students.html",
@@ -215,7 +228,9 @@ def super_admin_students(request):
             "sections": Section.objects.select_related("branch").all(),
             "students": students,
             "selected_branch": branch_id,
-            "selected_section": section_id,
+            "selected_section_id": section_id,
+            "selected_section": selected_section,
+            "search": search,
             "add_form": SuperAdminStudentCreateForm(),
             "csv_form": SuperAdminCsvUploadForm(),
         },
@@ -320,9 +335,43 @@ def make_sub_admin(request, user_id):
 
 
 @role_required("SUPER_ADMIN")
+def all_resumes_zip(request):
+    """ZIP of every uploaded resume, organised in Branch/Section folders."""
+    students = (
+        _student_queryset()
+        .prefetch_related("section__branch")
+        .order_by("section__branch__name", "section__name", "username")
+    )
+    buffer = io.BytesIO()
+    count = 0
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for student in students:
+            data = resume_storage.get_resume_bytes(student)
+            if data is None:
+                continue
+            sec = student.section
+            if sec:
+                folder = f"{safe_filename(sec.branch.name)}/Sec_{safe_filename(sec.name)}"
+            else:
+                folder = "Unassigned"
+            member = f"{folder}/{safe_filename(student.username)}_{safe_filename(student.first_name)}.pdf"
+            archive.writestr(member, data)
+            count += 1
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="all_resumes.zip"'
+    if count:
+        messages.success(request, f"ZIP created with {count} resume(s) from all sections.")
+    else:
+        messages.warning(request, "No resumes uploaded yet.")
+    return response
+
+
+@role_required("SUPER_ADMIN")
 def super_admin_resumes(request):
     branch_id = request.GET.get("branch") or ""
     section_id = request.GET.get("section") or ""
+    search = request.GET.get("q", "").strip()
     students = _student_queryset().annotate(has_resume=Count("resume")).order_by(
         "section__branch__name", "username"
     )
@@ -330,6 +379,10 @@ def super_admin_resumes(request):
         students = students.filter(section_id=section_id)
     elif branch_id:
         students = students.filter(section__branch_id=branch_id)
+    if search:
+        students = students.filter(
+            Q(username__icontains=search) | Q(first_name__icontains=search)
+        )
     selected_section = (
         Section.objects.filter(pk=section_id).select_related("branch").first()
         if section_id
@@ -345,6 +398,7 @@ def super_admin_resumes(request):
             "selected_branch": branch_id,
             "selected_section_id": section_id,
             "selected_section": selected_section,
+            "search": search,
             "uploaded": students.filter(has_resume__gt=0).count(),
         },
     )
