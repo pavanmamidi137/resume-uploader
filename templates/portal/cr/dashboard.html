@@ -1,0 +1,49 @@
+{% extends "base_dashboard.html" %}
+{% block page_title %}CR Dashboard{% endblock %}
+{% block page_subtitle %}{% if section %}Your section: <strong>{{ section }}</strong>{% else %}Section not assigned{% endif %}{% endblock %}
+{% block content %}
+{% if not section %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    Your account is not linked to any section. Please contact the super admin.
+  </div>
+{% else %}
+  <div class="stat-grid mb-4">
+    <div class="card stat-card">
+      <div class="stat-icon amber"><i class="bi bi-people"></i></div>
+      <div><div class="stat-value">{{ student_count }}</div><div class="stat-label">Students</div></div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-icon emerald"><i class="bi bi-file-earmark-pdf"></i></div>
+      <div><div class="stat-value">{{ resume_count }}</div><div class="stat-label">Resumes uploaded</div></div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-icon rose"><i class="bi bi-hourglass-split"></i></div>
+      <div><div class="stat-value">{{ pending_count }}</div><div class="stat-label">Pending resumes</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-4">
+      <h6 class="card-title mb-3"><i class="bi bi-lightning-charge me-2 text-primary"></i>Your tasks</h6>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <a class="btn btn-primary w-100 py-3" href="{% url 'portal:cr_students' %}">
+            <i class="bi bi-person-plus-fill d-block fs-3 mb-1"></i>Add students<br><small>manual or CSV</small>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a class="btn btn-soft w-100 py-3" href="{% url 'portal:cr_resumes' %}">
+            <i class="bi bi-folder2-open d-block fs-3 mb-1"></i>View resumes<br><small>of your section</small>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a class="btn btn-soft w-100 py-3" href="{% url 'portal:section_resumes_zip' section.pk %}">
+            <i class="bi bi-file-earmark-zip d-block fs-3 mb-1"></i>Download ZIP<br><small>all resumes of {{ section }}</small>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

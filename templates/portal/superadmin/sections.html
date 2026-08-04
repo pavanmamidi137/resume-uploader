@@ -1,0 +1,60 @@
+{% extends "base_dashboard.html" %}
+{% block page_title %}Sections{% endblock %}
+{% block page_subtitle %}Class sections within each branch{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="card-title mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Add section</h6>
+        <form method="post">
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          <button class="btn btn-primary w-100" type="submit">Save section</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="card-title mb-3">All sections</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr><th>Branch</th><th>Section</th><th>Year</th><th>Students</th><th class="text-end">Action</th></tr>
+            </thead>
+            <tbody>
+              {% for section in sections %}
+              <tr>
+                <td class="fw-semibold">{{ section.branch.name }}</td>
+                <td>{{ section.name }}</td>
+                <td>{% if section.year %}{{ section.year }}{% else %}—{% endif %}</td>
+                <td>{{ section.member_count }}</td>
+                <td class="text-end">
+                  <form method="post" action="{% url 'portal:super_admin_section_delete' section.pk %}"
+                        class="d-inline confirm-form" data-confirm="Delete section '{{ section }}'?">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">No sections yet — add your first section.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

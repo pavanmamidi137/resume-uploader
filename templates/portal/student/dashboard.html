@@ -1,0 +1,81 @@
+{% extends "base_dashboard.html" %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block page_subtitle %}Upload and manage your resume{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card text-center">
+      <div class="card-body p-4">
+        <span class="avatar avatar-xl mb-3">{{ user.initials }}</span>
+        <h5 class="mb-1">{{ user.first_name|default:user.username }}</h5>
+        <p class="text-muted mb-3">{{ user.username }}</p>
+        <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
+          <span class="badge badge-soft-primary">{{ user.role_label }}</span>
+          {% if user.section %}<span class="badge badge-soft-violet">{{ user.section }}</span>{% endif %}
+        </div>
+        <div class="list-group list-group-flush text-start">
+          <div class="list-group-item d-flex justify-content-between px-2">
+            <span class="text-muted">Roll number</span><strong>{{ user.username }}</strong>
+          </div>
+          <div class="list-group-item d-flex justify-content-between px-2">
+            <span class="text-muted">Branch / Section</span><strong>{{ user.section_label }}</strong>
+          </div>
+          <div class="list-group-item d-flex justify-content-between px-2">
+            <span class="text-muted">Resume</span>
+            {% if has_resume %}<span class="badge badge-soft-success">Uploaded</span>{% else %}<span class="badge badge-soft-warning">Not uploaded</span>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body p-4">
+        {% if has_resume %}
+          <h6 class="card-title mb-3"><i class="bi bi-file-earmark-pdf me-2 text-primary"></i>Your resume</h6>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 rounded-3 bg-light">
+            <div class="d-flex align-items-center gap-3">
+              <span class="stat-icon emerald"><i class="bi bi-file-earmark-pdf"></i></span>
+              <div>
+                <div class="fw-semibold">{{ resume.original_filename }}</div>
+                <div class="text-muted small">{{ resume.size_label }} · updated {{ resume.updated_at|date:"d M Y, g:i a" }}</div>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <a class="btn btn-outline-primary" href="{% url 'portal:resume_view' user.pk %}" target="_blank"><i class="bi bi-eye me-1"></i>View</a>
+              <a class="btn btn-outline-success" href="{% url 'portal:resume_download' user.pk %}"><i class="bi bi-download me-1"></i>Download</a>
+              <form method="post" action="{% url 'portal:resume_delete' user.pk %}" class="d-inline confirm-form"
+                    data-confirm="Delete your resume?">
+                {% csrf_token %}
+                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash me-1"></i>Delete</button>
+              </form>
+            </div>
+          </div>
+          <hr>
+          <h6 class="card-title mb-2"><i class="bi bi-arrow-repeat me-2 text-primary"></i>Replace resume</h6>
+        {% else %}
+          <h6 class="card-title mb-3"><i class="bi bi-upload me-2 text-primary"></i>Upload your resume</h6>
+          <p class="text-muted small">Upload a PDF version of your resume (max {{ max_size_mb }} MB). Only you, your CR and the super admin can see it.</p>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_file" class="dropzone" data-empty="Click to choose a PDF resume">
+              <div class="dz-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="dz-label">Click to choose a PDF resume</div>
+              <div class="text-muted small mt-1">or drag &amp; drop · max {{ max_size_mb }} MB</div>
+              <input type="file" name="file" id="id_file" class="d-none" accept="application/pdf,.pdf" data-max-size-mb="{{ max_size_mb }}">
+            </label>
+            {% for error in form.file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-cloud-arrow-up me-1"></i>{% if has_resume %}Replace resume{% else %}Upload resume{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

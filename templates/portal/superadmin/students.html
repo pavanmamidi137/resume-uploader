@@ -1,0 +1,159 @@
+{% extends "base_dashboard.html" %}
+{% block page_title %}Students{% endblock %}
+{% block page_subtitle %}All registered students across branches and sections{% endblock %}
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-body p-4">
+        <h6 class="card-title mb-3"><i class="bi bi-person-plus me-2 text-primary"></i>Add a student</h6>
+        <form method="post" action="{% url 'portal:super_admin_students_add' %}">
+          {% csrf_token %}
+          {% for field in add_form %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-lg me-1"></i>Add student</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-body p-4">
+        <h6 class="card-title mb-1"><i class="bi bi-upload me-2 text-primary"></i>Bulk upload via CSV</h6>
+        <p class="text-muted small mb-3">
+          Columns: <code>roll_number,name</code> (one student per row). Download the
+          <a href="{% url 'portal:csv_template' %}">CSV template</a>.
+        </p>
+        <form method="post" action="{% url 'portal:super_admin_students_csv' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% for field in csv_form %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          <button class="btn btn-success w-100" type="submit"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import CSV</button>
+        </form>
+        <div class="alert alert-info py-2 small mt-3 mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          Roll numbers that are <strong>already registered (students, CRs or admins)</strong> are
+          automatically skipped — no duplicates are created. New students get
+          <strong>roll number as username and initial password</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body p-4">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold" for="id-branch">Branch</label>
+        <select name="branch" id="id-branch" class="form-select">
+          <option value="">All branches</option>
+          {% for branch in branches %}
+            <option value="{{ branch.pk }}" {% if selected_branch == branch.pk|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold" for="id-section">Section</label>
+        <select name="section" id="id-section" class="form-select">
+          <option value="">All sections</option>
+          {% for section in sections %}
+            <option value="{{ section.pk }}" data-branch="{{ section.branch_id }}"
+                    {% if selected_section == section.pk|stringformat:"s" %}selected{% endif %}>{{ section }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <a class="btn btn-soft" href="{% url 'portal:super_admin_students' %}">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="card-title mb-0">{{ students|length }} student(s)</h6>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr><th>Roll no.</th><th>Name</th><th>Section</th><th>Resume</th><th class="text-end">Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for student in students %}
+          <tr>
+            <td class="fw-semibold">{{ student.username }}</td>
+            <td>{{ student.first_name|default:"—" }}</td>
+            <td>{{ student.section_label }}</td>
+            <td>
+              {% if student.has_resume %}
+                <span class="badge badge-soft-success"><i class="bi bi-check-circle me-1"></i>Uploaded</span>
+              {% else %}
+                <span class="badge badge-soft-warning"><i class="bi bi-hourglass me-1"></i>Pending</span>
+              {% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              {% if student.has_resume %}
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'portal:resume_view' student.pk %}" target="_blank" title="View"><i class="bi bi-eye"></i></a>
+                <a class="btn btn-sm btn-outline-success" href="{% url 'portal:resume_download' student.pk %}" title="Download"><i class="bi bi-download"></i></a>
+              {% endif %}
+              {% if student.section_id %}
+                <form method="post" action="{% url 'portal:super_admin_make_cr' student.pk %}" class="d-inline confirm-form"
+                      data-confirm="Make '{{ student.username }}' a sub admin (CR) of {{ student.section_label }}?">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-violet" type="submit" title="Make CR"><i class="bi bi-person-badge"></i></button>
+                </form>
+              {% endif %}
+              <form method="post" action="{% url 'portal:super_admin_reset_password' student.pk %}" class="d-inline confirm-form"
+                    data-confirm="Reset password of '{{ student.username }}' to their roll number?">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-warning" type="submit" title="Reset password"><i class="bi bi-arrow-counterclockwise"></i></button>
+              </form>
+              <form method="post" action="{% url 'portal:super_admin_delete_user' student.pk %}" class="d-inline confirm-form"
+                    data-confirm="Delete student '{{ student.username }}' and their resume?">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No students found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  // Filter section options by selected branch
+  (function () {
+    const branch = document.getElementById('id-branch');
+    const section = document.getElementById('id-section');
+    if (!branch || !section) return;
+    const filter = () => {
+      const b = branch.value;
+      [...section.options].forEach(opt => {
+        opt.hidden = b && opt.value && opt.dataset.branch !== b;
+        if (opt.hidden && opt.selected) { opt.selected = false; }
+      });
+    };
+    branch.addEventListener('change', filter);
+    filter();
+  })();
+</script>
+{% endblock %}

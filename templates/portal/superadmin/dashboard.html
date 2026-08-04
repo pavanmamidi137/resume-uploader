@@ -1,0 +1,60 @@
+{% extends "base_dashboard.html" %}
+{% block page_title %}Super Admin Dashboard{% endblock %}
+{% block page_subtitle %}Overview of branches, sections, users and resumes{% endblock %}
+{% block content %}
+<div class="stat-grid mb-4">
+  <div class="card stat-card">
+    <div class="stat-icon indigo"><i class="bi bi-diagram-3"></i></div>
+    <div><div class="stat-value">{{ branch_count }}</div><div class="stat-label">Branches</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon violet"><i class="bi bi-collection"></i></div>
+    <div><div class="stat-value">{{ section_count }}</div><div class="stat-label">Sections</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon sky"><i class="bi bi-person-badge"></i></div>
+    <div><div class="stat-value">{{ cr_count }}</div><div class="stat-label">Sub Admins (CRs)</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon amber"><i class="bi bi-people"></i></div>
+    <div><div class="stat-value">{{ student_count }}</div><div class="stat-label">Students</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon emerald"><i class="bi bi-file-earmark-pdf"></i></div>
+    <div><div class="stat-value">{{ resume_count }}</div><div class="stat-label">Resumes uploaded</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon rose"><i class="bi bi-hourglass-split"></i></div>
+    <div><div class="stat-value">{{ pending_count }}</div><div class="stat-label">Pending resumes</div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-body p-4">
+        <h6 class="card-title mb-3"><i class="bi bi-lightning-charge me-2 text-primary"></i>Getting started</h6>
+        <ol class="mb-0 ps-3 text-muted lh-lg">
+          <li>Add <a href="{% url 'portal:super_admin_branches' %}">branches</a> and <a href="{% url 'portal:super_admin_sections' %}">sections</a>.</li>
+          <li>Create <a href="{% url 'portal:super_admin_sub_admins' %}">sub admins (CRs)</a> from CR roll numbers — their password is the roll number.</li>
+          <li>CRs add students (manual or CSV) and students upload resumes.</li>
+          <li>Browse and download resumes <a href="{% url 'portal:super_admin_resumes' %}">section-wise as PDFs or a ZIP</a>.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body p-4">
+        <h6 class="card-title mb-3"><i class="bi bi-plus-square me-2 text-primary"></i>Quick actions</h6>
+        <div class="d-grid gap-2">
+          <a class="btn btn-primary" href="{% url 'portal:super_admin_branches' %}"><i class="bi bi-plus-lg me-1"></i>Add branch</a>
+          <a class="btn btn-primary" href="{% url 'portal:super_admin_sections' %}"><i class="bi bi-plus-lg me-1"></i>Add section</a>
+          <a class="btn btn-primary" href="{% url 'portal:super_admin_sub_admins' %}"><i class="bi bi-person-badge me-1"></i>Add CR</a>
+          <a class="btn btn-soft" href="{% url 'portal:super_admin_resumes' %}"><i class="bi bi-folder2-open me-1"></i>Browse resumes</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
