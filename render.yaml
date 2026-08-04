@@ -14,6 +14,11 @@ services:
     name: resume-portal
     runtime: python
     plan: free
+    # Deploys are triggered by the GitHub Actions workflow (.github/workflows/
+    # deploy.yml). autoDeploy is disabled here so Render's native git watching
+    # doesn't deploy in parallel with the workflow's Django system check.
+    branch: main
+    autoDeploy: false
     buildCommand: >-
       pip install -r requirements.txt &&
       python manage.py collectstatic --noinput &&

@@ -97,6 +97,28 @@ A `render.yaml` Blueprint with these commands is included in the repo.
 | `SUPABASE_SERVICE_ROLE_KEY` | the **real** service-role key from Supabase → Project Settings → API |
 | `SUPABASE_STORAGE_BUCKET` | `resumes` |
 
+### Auto-deploy with GitHub Actions
+
+A workflow (`.github/workflows/deploy.yml`) deploys to Render **on every push to `main`**:
+
+1. **Django system check** runs first (`python manage.py check`) — if the code is
+   broken, the deploy is blocked.
+2. If it passes, GitHub POSTs to your **Render Deploy Hook**.
+
+**One-time setup:**
+
+1. Render dashboard → your service → **Settings → Deploy Hook → Create Hook**.
+   Copy the URL (looks like `https://api.render.com/deploy/srv-xxxx?key=yyyy`).
+2. GitHub repo → **Settings → Secrets and variables → Actions** → new secret
+   named exactly `RENDER_DEPLOY_HOOK_URL` with that URL as the value.
+
+> The hook URL is a secret capability (no auth required) — never commit it.
+> The workflow has `workflow_dispatch`, so you can also trigger a deploy
+> manually from the **Actions** tab.
+
+Because deploys are hook-triggered, `render.yaml` sets `autoDeploy: false` to
+avoid Render's native git-watch deploying in parallel.
+
 ### Production notes
 
 - **Static files** are served by WhiteNoise (no CDN needed) — `collectstatic` runs in the build step.

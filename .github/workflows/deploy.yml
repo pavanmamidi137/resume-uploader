@@ -1,0 +1,59 @@
+# ---------------------------------------------------------------------------
+# Deploy to Render on every push to `main`.
+#
+# How it works:
+#   1. A `check` job installs dependencies and runs `python manage.py check`
+#      so broken code never reaches production.
+#   2. If the check passes, a `deploy` job POSTs to your Render Deploy Hook.
+#
+# One-time setup (required before the deploy job can succeed):
+#   1. Render dashboard -> your web service -> Settings -> Deploy Hook ->
+#      "Create Hook" -> copy the URL (looks like
+#      https://api.render.com/deploy/srv-xxxx?key=yyyy).
+#   2. GitHub repo -> Settings -> Secrets and variables -> Actions ->
+#      "New repository secret" -> name it exactly `RENDER_DEPLOY_HOOK_URL`
+#      and paste the hook URL as the value.
+#
+# The hook URL is a secret capability (no auth required), so never commit it.
+# ---------------------------------------------------------------------------
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow manual "Run workflow" from the Actions tab
+
+jobs:
+  check:
+    name: Django system check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Django system check
+        run: python manage.py check
+        env:
+          # settings.py raises ImproperlyConfigured when DEBUG=0 and
+          # DATABASE_URL is absent; a dummy URL is fine because `check`
+          # never opens a database connection.
+          DEBUG: "0"
+          DATABASE_URL: "postgresql://check:check@localhost:5432/check"
+
+  deploy:
+    name: Trigger Render deploy
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST to Render deploy hook
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        # `--fail` makes the job fail if the hook URL is invalid or
+        # returns an error status, so the pipeline can't silently pass.
