@@ -54,7 +54,7 @@
 <div class="card">
   <div class="card-body p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="card-title mb-0">{{ students|length }} student(s) · {{ uploaded }} resume(s)</h6>
+      <h6 class="card-title mb-0">{{ students|length }} students &amp; CRs · {{ uploaded }} resume(s)</h6>
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle">
@@ -64,7 +64,10 @@
         <tbody>
           {% for student in students %}
           <tr>
-            <td class="fw-semibold">{{ student.username }}</td>
+            <td class="fw-semibold">
+              {{ student.username }}
+              {% if student.is_sub_admin %}<span class="badge badge-soft-violet ms-1">CR</span>{% endif %}
+            </td>
             <td>{{ student.first_name|default:"—" }}</td>
             <td>{{ student.section_label }}</td>
             <td>

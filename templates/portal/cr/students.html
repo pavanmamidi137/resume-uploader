@@ -49,7 +49,7 @@
 <div class="card">
   <div class="card-body p-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-      <h6 class="card-title mb-0">{{ students|length }} student(s) in {{ section }}</h6>
+      <h6 class="card-title mb-0">{{ students|length }} student(s) &amp; CR(s) in {{ section }}</h6>
       <a class="btn btn-sm btn-outline-success" href="{% url 'portal:section_resumes_zip' section.pk %}">
         <i class="bi bi-file-earmark-zip me-1"></i>Download all resumes (ZIP)
       </a>
@@ -70,7 +70,10 @@
         <tbody>
           {% for student in students %}
           <tr>
-            <td class="fw-semibold">{{ student.username }}</td>
+            <td class="fw-semibold">
+              {{ student.username }}
+              {% if student.is_sub_admin %}<span class="badge badge-soft-violet ms-1">CR</span>{% endif %}
+            </td>
             <td>{{ student.first_name|default:"—" }}</td>
             <td>
               {% if student.has_resume %}
@@ -84,16 +87,18 @@
                 <a class="btn btn-sm btn-outline-primary" href="{% url 'portal:resume_view' student.pk %}" target="_blank" title="View"><i class="bi bi-eye"></i></a>
                 <a class="btn btn-sm btn-outline-success" href="{% url 'portal:resume_download' student.pk %}" title="Download"><i class="bi bi-download"></i></a>
               {% endif %}
-              <form method="post" action="{% url 'portal:cr_reset_password' student.pk %}" class="d-inline confirm-form"
-                    data-confirm="Reset password of '{{ student.username }}' to their roll number?">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-warning" type="submit" title="Reset password"><i class="bi bi-arrow-counterclockwise"></i></button>
-              </form>
-              <form method="post" action="{% url 'portal:cr_delete_user' student.pk %}" class="d-inline confirm-form"
-                    data-confirm="Delete student '{{ student.username }}' and their resume?">
-                {% csrf_token %}
-                <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
-              </form>
+              {% if not student.is_sub_admin %}
+                <form method="post" action="{% url 'portal:cr_reset_password' student.pk %}" class="d-inline confirm-form"
+                      data-confirm="Reset password of '{{ student.username }}' to their roll number?">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-warning" type="submit" title="Reset password"><i class="bi bi-arrow-counterclockwise"></i></button>
+                </form>
+                <form method="post" action="{% url 'portal:cr_delete_user' student.pk %}" class="d-inline confirm-form"
+                      data-confirm="Delete student '{{ student.username }}' and their resume?">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit" title="Delete"><i class="bi bi-trash"></i></button>
+                </form>
+              {% endif %}
             </td>
           </tr>
           {% empty %}

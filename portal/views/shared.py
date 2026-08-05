@@ -41,7 +41,9 @@ def _back(request, fallback):
 # Resume access rules
 # ---------------------------------------------------------------------------
 def can_view_resume(user, owner):
-    """Students see only their own resume; CRs see their section; super admins see all."""
+    """Everyone can see their own resume; CRs see their section; super admins see all."""
+    if user.pk == owner.pk:
+        return True
     if user.is_super_admin:
         return True
     if user.is_sub_admin and user.section_id and user.section_id == owner.section_id:
@@ -82,7 +84,10 @@ def resume_download(request, user_id):
 def resume_delete(request, user_id):
     owner = get_object_or_404(User, pk=user_id)
     user = request.user
-    allowed = user.is_super_admin or (user.is_student_role and user.pk == owner.pk)
+    # CRs are also students — they may delete (replace) their own resume too.
+    allowed = user.is_super_admin or (
+        user.pk == owner.pk and (user.is_student_role or user.is_sub_admin)
+    )
     if not allowed:
         raise PermissionDenied
     if request.method == "POST":
@@ -100,7 +105,10 @@ def section_resumes_zip(request, section_id):
     if not (user.is_super_admin or (user.is_sub_admin and user.section_id == section.id)):
         raise PermissionDenied
 
-    students = User.objects.filter(role=User.Role.STUDENT, section=section).order_by("username")
+    # CRs are also students (special ones) — include their resumes in the ZIP.
+    students = User.objects.filter(
+        role__in=[User.Role.STUDENT, User.Role.SUB_ADMIN], section=section
+    ).order_by("username")
     buffer = io.BytesIO()
     count = 0
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:

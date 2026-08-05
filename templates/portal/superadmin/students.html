@@ -1,6 +1,6 @@
 {% extends "base_dashboard.html" %}
 {% block page_title %}Students{% endblock %}
-{% block page_subtitle %}All registered students across branches and sections{% endblock %}
+{% block page_subtitle %}All registered students &amp; CRs across branches and sections{% endblock %}
 {% block content %}
 <div class="row g-4 mb-4">
   <div class="col-lg-5">
@@ -104,7 +104,7 @@
 <div class="card">
   <div class="card-body p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="card-title mb-0">{{ students|length }} student(s)</h6>
+      <h6 class="card-title mb-0">{{ students|length }} student(s) &amp; CR(s)</h6>
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle">
@@ -114,7 +114,10 @@
         <tbody>
           {% for student in students %}
           <tr>
-            <td class="fw-semibold">{{ student.username }}</td>
+            <td class="fw-semibold">
+              {{ student.username }}
+              {% if student.is_sub_admin %}<span class="badge badge-soft-violet ms-1">CR</span>{% endif %}
+            </td>
             <td>{{ student.first_name|default:"—" }}</td>
             <td>{{ student.section_label }}</td>
             <td>
@@ -129,7 +132,7 @@
                 <a class="btn btn-sm btn-outline-primary" href="{% url 'portal:resume_view' student.pk %}" target="_blank" title="View"><i class="bi bi-eye"></i></a>
                 <a class="btn btn-sm btn-outline-success" href="{% url 'portal:resume_download' student.pk %}" title="Download"><i class="bi bi-download"></i></a>
               {% endif %}
-              {% if student.section_id %}
+              {% if student.section_id and not student.is_sub_admin %}
                 <form method="post" action="{% url 'portal:super_admin_make_cr' student.pk %}" class="d-inline confirm-form"
                       data-confirm="Make '{{ student.username }}' a sub admin (CR) of {{ student.section_label }}?">
                   {% csrf_token %}

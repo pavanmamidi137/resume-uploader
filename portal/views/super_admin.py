@@ -24,8 +24,12 @@ from ..models import Branch, Resume, Section
 from .shared import _back, safe_filename
 
 
-def _student_queryset():
-    return User.objects.filter(role=User.Role.STUDENT).select_related("section__branch")
+def _member_queryset():
+    """Students plus CRs — CRs are also students (special ones), so they show
+    up in the students/resumes lists and ZIP downloads too."""
+    return User.objects.filter(
+        role__in=[User.Role.STUDENT, User.Role.SUB_ADMIN]
+    ).select_related("section__branch")
 
 
 @role_required("SUPER_ADMIN")
@@ -204,7 +208,7 @@ def super_admin_students(request):
     branch_id = request.GET.get("branch") or ""
     section_id = request.GET.get("section") or ""
     search = request.GET.get("q", "").strip()
-    students = _student_queryset().annotate(has_resume=Count("resume")).order_by(
+    students = _member_queryset().annotate(has_resume=Count("resume")).order_by(
         "section__branch__name", "username"
     )
     if section_id:
@@ -338,7 +342,7 @@ def make_sub_admin(request, user_id):
 def all_resumes_zip(request):
     """ZIP of every uploaded resume, organised in Branch/Section folders."""
     students = (
-        _student_queryset()
+        _member_queryset()
         .prefetch_related("section__branch")
         .order_by("section__branch__name", "section__name", "username")
     )
@@ -372,7 +376,7 @@ def super_admin_resumes(request):
     branch_id = request.GET.get("branch") or ""
     section_id = request.GET.get("section") or ""
     search = request.GET.get("q", "").strip()
-    students = _student_queryset().annotate(has_resume=Count("resume")).order_by(
+    students = _member_queryset().annotate(has_resume=Count("resume")).order_by(
         "section__branch__name", "username"
     )
     if section_id:

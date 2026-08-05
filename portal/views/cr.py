@@ -18,7 +18,15 @@ from .shared import _back
 
 
 def _cr_students(user):
+    """Regular students of the CR's section (used for dashboard counts)."""
     return User.objects.filter(role=User.Role.STUDENT, section=user.section)
+
+
+def _cr_members(user):
+    """Students AND CRs of the section — CRs are also students (special ones)."""
+    return User.objects.filter(
+        role__in=[User.Role.STUDENT, User.Role.SUB_ADMIN], section=user.section
+    )
 
 
 @role_required("SUB_ADMIN")
@@ -74,7 +82,7 @@ def cr_students(request):
 
     search = request.GET.get("q", "").strip()
     students = (
-        _cr_students(user)
+        _cr_members(user)
         .annotate(has_resume=Count("resume"))
         .order_by("username")
     )
@@ -161,7 +169,7 @@ def cr_resumes(request):
     user = request.user
     search = request.GET.get("q", "").strip()
     students = (
-        _cr_students(user)
+        _cr_members(user)
         .select_related("section__branch")
         .annotate(has_resume=Count("resume"))
         .order_by("username")
@@ -182,6 +190,9 @@ def cr_reset_password(request, user_id):
     target = get_object_or_404(User, pk=user_id)
     if not (request.user.section_id and target.section_id == request.user.section_id):
         raise PermissionDenied
+    if target.is_super_admin or target.is_sub_admin:
+        # CRs manage students — only the super admin can manage CR/admin accounts.
+        raise PermissionDenied
     if request.method == "POST":
         target.set_password(target.username)
         target.must_change_password = True
@@ -194,6 +205,9 @@ def cr_reset_password(request, user_id):
 def cr_delete_user(request, user_id):
     target = get_object_or_404(User, pk=user_id)
     if not (request.user.section_id and target.section_id == request.user.section_id):
+        raise PermissionDenied
+    if target.is_super_admin or target.is_sub_admin:
+        # CRs manage students — only the super admin can manage CR/admin accounts.
         raise PermissionDenied
     if request.method == "POST":
         if hasattr(target, "resume"):
