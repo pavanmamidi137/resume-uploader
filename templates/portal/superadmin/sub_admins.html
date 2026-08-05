@@ -1,6 +1,6 @@
 {% extends "base_dashboard.html" %}
 {% block page_title %}Sub Admins (CRs){% endblock %}
-{% block page_subtitle %}Create class representatives and reset their passwords{% endblock %}
+{% block page_subtitle %}Create class representatives, reset their passwords, or demote them back to students{% endblock %}
 {% block content %}
 <div class="row g-4">
   <div class="col-lg-4">
@@ -42,6 +42,11 @@
                 <td>{{ cr.first_name|default:"—" }}</td>
                 <td>{{ cr.section_label }}</td>
                 <td class="text-end">
+                  <form method="post" action="{% url 'portal:super_admin_demote_cr' cr.pk %}" class="d-inline confirm-form"
+                        data-confirm="Demote '{{ cr.username }}' from CR back to a regular student? Their resume, section and password stay unchanged.">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" title="Demote to student"><i class="bi bi-person-dash"></i> Demote</button>
+                  </form>
                   <form method="post" action="{% url 'portal:super_admin_reset_password' cr.pk %}" class="d-inline confirm-form"
                         data-confirm="Reset password of '{{ cr.username }}' to their roll number?">
                     {% csrf_token %}

@@ -18,6 +18,7 @@ from .student import student_dashboard  # noqa: F401
 from .super_admin import (  # noqa: F401
     all_resumes_zip,
     delete_user,
+    demote_sub_admin,
     make_sub_admin,
     reset_password,
     super_admin_branch_delete,

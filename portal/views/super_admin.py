@@ -339,6 +339,24 @@ def make_sub_admin(request, user_id):
 
 
 @role_required("SUPER_ADMIN")
+def demote_sub_admin(request, user_id):
+    """Demote a sub admin (CR) back to a regular student. Their section,
+    password and resume stay untouched — only the role changes."""
+    target = get_object_or_404(User, pk=user_id)
+    if request.method == "POST":
+        if not target.is_sub_admin:
+            messages.error(request, f"'{target.username}' is not a sub admin (CR).")
+        else:
+            target.role = User.Role.STUDENT
+            target.save(update_fields=["role"])
+            messages.success(
+                request,
+                f"'{target.username}' demoted to a regular student — login and password are unchanged.",
+            )
+    return redirect(_back(request, "portal:super_admin_students"))
+
+
+@role_required("SUPER_ADMIN")
 def all_resumes_zip(request):
     """ZIP of every uploaded resume, organised in Branch/Section folders."""
     students = (

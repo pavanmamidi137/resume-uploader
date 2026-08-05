@@ -138,6 +138,12 @@
                   {% csrf_token %}
                   <button class="btn btn-sm btn-outline-violet" type="submit" title="Make CR"><i class="bi bi-person-badge"></i></button>
                 </form>
+              {% elif student.is_sub_admin %}
+                <form method="post" action="{% url 'portal:super_admin_demote_cr' student.pk %}" class="d-inline confirm-form"
+                      data-confirm="Demote '{{ student.username }}' from CR back to a regular student? Their resume, section and password stay unchanged.">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-secondary" type="submit" title="Demote CR"><i class="bi bi-person-dash"></i></button>
+                </form>
               {% endif %}
               <form method="post" action="{% url 'portal:super_admin_reset_password' student.pk %}" class="d-inline confirm-form"
                     data-confirm="Reset password of '{{ student.username }}' to their roll number?">
