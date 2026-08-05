@@ -5,6 +5,7 @@ from django import forms
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
         label="Roll number / username",
+        help_text="Roll numbers are case-insensitive — type them in small or capital letters.",
         widget=forms.TextInput(
             attrs={
                 "class": "form-control form-control-lg",
@@ -15,6 +16,8 @@ class LoginForm(AuthenticationForm):
     )
     password = forms.CharField(
         label="Password",
+        help_text="First-time password is your roll number in CAPITAL letters. After you change "
+        "it, type it exactly as you set it.",
         widget=forms.PasswordInput(
             attrs={"class": "form-control form-control-lg", "placeholder": "Your password"}
         ),

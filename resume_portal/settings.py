@@ -127,6 +127,10 @@ DATABASES = {"default": DB_CONFIG}
 # ---------------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
 
+# Usernames (roll numbers) are stored in CAPITALS; let students/CRs type them
+# in any case. Passwords remain case-sensitive after users change them.
+AUTHENTICATION_BACKENDS = ["accounts.backends.CaseInsensitiveUsernameBackend"]
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
